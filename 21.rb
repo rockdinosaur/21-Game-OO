@@ -1,13 +1,5 @@
 # 21 Game
 module Calculable
-  def prompt(msg)
-    puts ">> #{msg}"
-  end
-
-  def clear
-    system "clear"
-  end
-
   def total_value_arr
     cards.each_with_object([]) { |card, arr| arr << card[2] }
   end
@@ -56,6 +48,14 @@ end
 module Displayable
   include Calculable
 
+  def prompt(msg)
+    puts ">> #{msg}"
+  end
+
+  def clear
+    system "clear"
+  end
+
   def display_welcome_message
     prompt "Welcome to 21!"
     puts
@@ -90,21 +90,15 @@ module Displayable
     puts "-" * 28
   end
 
-  def player_cards_strings(player)
+  def cards_strings(player)
     player.cards.each_with_object([]) do |card, arr|
       arr << "#{card[0]} of #{card[1]}"
     end
   end
 
-  def dealer_cards_strings(dealer)
-    dealer.cards.each_with_object([]) do |card, arr|
-      arr << "#{card[0]} of #{card[1]}"
-    end
-  end
-
   def final_chart(player, dealer)
-    player_cards = player_cards_strings(player)
-    dealer_cards = dealer_cards_strings(dealer)
+    player_cards = cards_strings(player)
+    dealer_cards = cards_strings(dealer)
     largest_hand_count(player, dealer).times do |counter|
       player_cards[counter] = '' if player_cards[counter].nil?
       dealer_cards[counter] = '' if dealer_cards[counter].nil?
@@ -132,6 +126,17 @@ module Displayable
       player.display_busted_message
     elsif dealer.bust?
       dealer.display_busted_message
+    end
+  end
+
+  def display_winner
+    return nil if player.bust? || dealer.bust?
+    if player.calculate_value > dealer.calculate_value
+      prompt "You win!"
+    elsif player.calculate_value < dealer.calculate_value
+      prompt "Dealer wins!"
+    else
+      prompt "Tie."
     end
   end
 end
@@ -234,6 +239,10 @@ class Player
   def display_busted_message
     prompt "You lose. You busted!"
   end
+
+  def reset_cards
+    cards.clear
+  end
 end
 
 class Dealer
@@ -266,6 +275,10 @@ class Dealer
   def display_busted_message
     prompt "Dealer busted. You win!"
   end
+
+  def reset_cards
+    cards.clear
+  end
 end
 
 class GameEngine
@@ -276,12 +289,18 @@ class GameEngine
   def initialize
     @player = Player.new
     @dealer = Dealer.new
-    @deck = Deck.new
+    reset
   end
 
   def initialize_game
-    initialize
+    reset
     deal
+  end
+
+  def reset
+    player.reset_cards
+    dealer.reset_cards
+    @deck = Deck.new
   end
 
   def play
@@ -297,7 +316,7 @@ class GameEngine
       end
       display_final_hands_and_values(player, dealer)
       display_busted_message(player, dealer)
-      determine_winner
+      display_winner
       break unless play_again?
     end
     display_goodbye_message
@@ -331,17 +350,6 @@ class GameEngine
     loop do
       hit_dealer
       break if dealer.at_least_17?
-    end
-  end
-
-  def determine_winner
-    return nil if player.bust? || dealer.bust?
-    if player.calculate_value > dealer.calculate_value
-      prompt "You win!"
-    elsif player.calculate_value < dealer.calculate_value
-      prompt "Dealer wins!"
-    else
-      prompt "Tie."
     end
   end
 
